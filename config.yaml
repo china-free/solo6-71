@@ -1,0 +1,27 @@
+defaults:
+  interval: 60
+  failure_threshold: 3
+  timeout: 10
+  export_interval: 300
+  report_interval: 600
+
+urls:
+  - url: https://www.baidu.com
+    interval: 30
+    failure_threshold: 3
+    timeout: 10
+
+  - url: https://www.github.com
+    interval: 60
+    failure_threshold: 5
+    timeout: 15
+
+  - url: https://httpstat.us/404
+    interval: 120
+    failure_threshold: 2
+    timeout: 10
+
+  - url: https://nonexistent.example.invalid
+    interval: 60
+    failure_threshold: 3
+    timeout: 5
