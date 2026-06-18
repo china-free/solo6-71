@@ -28,7 +28,7 @@ class HTTPMonitor:
                 allow_redirects=True
             )
             status_code = response.status_code
-            success = 200 <= status_code < 500
+            success = 200 <= status_code < 300
             if not success:
                 error_message = f"HTTP {status_code}"
         except requests.exceptions.Timeout:
