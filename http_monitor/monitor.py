@@ -3,12 +3,18 @@ import requests
 from typing import Callable, Optional
 
 from .models import CheckResult, URLConfig
+from .classifier import StatusClassifier
 
 
 class HTTPMonitor:
     def __init__(self, url_config: URLConfig):
         self.url_config = url_config
+        self._classifier: StatusClassifier = url_config.get_status_classifier()
         self._last_check_time: Optional[float] = None
+
+    @property
+    def classifier(self) -> StatusClassifier:
+        return self._classifier
 
     def check(self) -> CheckResult:
         url = self.url_config.url
@@ -28,9 +34,10 @@ class HTTPMonitor:
                 allow_redirects=True
             )
             status_code = response.status_code
-            success = 200 <= status_code < 300
+            success = self._classifier.is_success(status_code)
             if not success:
-                error_message = f"HTTP {status_code}"
+                category = self._classifier.classify(status_code)
+                error_message = f"HTTP {status_code} ({category})"
         except requests.exceptions.Timeout:
             error_message = "Request timed out"
         except requests.exceptions.ConnectionError as e:

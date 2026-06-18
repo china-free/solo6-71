@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Union
+
+from .classifier import StatusClassifier
 
 
 @dataclass
@@ -39,6 +41,10 @@ class URLConfig:
     failure_threshold: int = 3
     timeout: int = 10
     method: str = 'GET'
+    success_ranges: list[tuple[int, int]] = field(default_factory=lambda: [(200, 299)])
+
+    def get_status_classifier(self) -> StatusClassifier:
+        return StatusClassifier(self.success_ranges)
 
 
 @dataclass
@@ -47,5 +53,9 @@ class MonitorConfig:
     default_interval: int = 60
     default_failure_threshold: int = 3
     default_timeout: int = 10
+    default_success_ranges: list[tuple[int, int]] = field(default_factory=lambda: [(200, 299)])
     export_interval: int = 300
     report_interval: int = 600
+
+    def get_default_classifier(self) -> StatusClassifier:
+        return StatusClassifier(self.default_success_ranges)

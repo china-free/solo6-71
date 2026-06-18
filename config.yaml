@@ -4,6 +4,8 @@ defaults:
   timeout: 10
   export_interval: 300
   report_interval: 600
+  success_ranges:
+    - 200-299
 
 urls:
   - url: https://www.baidu.com
@@ -20,6 +22,9 @@ urls:
     interval: 120
     failure_threshold: 2
     timeout: 10
+    success_ranges:
+      - 200-299
+      - 404
 
   - url: https://nonexistent.example.invalid
     interval: 60

@@ -47,8 +47,11 @@ class HTTPMonitoringService:
         print("=" * 80)
         print(f"Monitoring {len(self.monitors)} URLs:")
         for monitor in self.monitors:
-            print(f"  - {monitor.url} (interval: {monitor.interval}s, "
-                  f"threshold: {monitor.failure_threshold} failures)")
+            success_ranges_str = monitor.classifier.get_success_ranges_str()
+            print(f"  - {monitor.url}")
+            print(f"    interval: {monitor.interval}s, "
+                  f"threshold: {monitor.failure_threshold} failures, "
+                  f"success codes: {success_ranges_str}")
         print("=" * 80)
         print("Press Ctrl+C to stop\n")
 
@@ -117,6 +120,21 @@ class HTTPMonitoringService:
             print(f"\n💾 Final data exported to: {filepath}\n")
 
 
+def parse_success_ranges(ranges_str: list[str]) -> list[tuple[int, int]]:
+    if not ranges_str:
+        return [(200, 299)]
+
+    ranges = []
+    for r in ranges_str:
+        if '-' in r:
+            start, end = r.split('-', 1)
+            ranges.append((int(start.strip()), int(end.strip())))
+        else:
+            code = int(r.strip())
+            ranges.append((code, code))
+    return ranges
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="HTTP Service Availability Monitor",
@@ -126,6 +144,8 @@ Examples:
   %(prog)s --url https://example.com --url https://google.com -i 30
   %(prog)s -c config.yaml
   %(prog)s --url https://example.com -t 10 --failure-threshold 5
+  %(prog)s --url https://example.com --success-range 200-399
+  %(prog)s --url https://example.com --success-range 200 --success-range 201 --success-range 204
         """
     )
 
@@ -142,6 +162,10 @@ Examples:
                            help="Request timeout in seconds (default: 10)")
     url_group.add_argument("--failure-threshold", type=int, default=3,
                            help="Consecutive failures before alert (default: 3)")
+    url_group.add_argument("--success-range", action="append", type=str,
+                           dest="success_ranges",
+                           help="Success status code range, e.g., '200-299' or '200' "
+                                "(can be specified multiple times, default: 200-299)")
 
     export_group = parser.add_argument_group("Export Configuration")
     export_group.add_argument("--export-dir", type=str, default="exports",
@@ -161,11 +185,13 @@ def main():
         if args.config:
             config = ConfigLoader.load_from_yaml(args.config)
         elif args.url:
+            success_ranges = parse_success_ranges(args.success_ranges)
             config = ConfigLoader.load_from_args(
                 urls=args.url,
                 interval=args.interval,
                 failure_threshold=args.failure_threshold,
-                timeout=args.timeout
+                timeout=args.timeout,
+                success_ranges=success_ranges
             )
             config.export_interval = args.export_interval
             config.report_interval = args.report_interval
